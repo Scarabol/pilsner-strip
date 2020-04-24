@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pilsener Strip</title>
+    <style>
+        .resource {
+            display: none;
+        }
+
+        .autopilot {
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-end;
+            color: #aaa;
+            padding: 0.5rem;
+            opacity: 0;
+        }
+
+        .autopilot > input {
+            transform: scale(1.3);
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+<img class="resource" id="girl3_1" src="res/Image 1 at frame 0.jpg" alt="girl3_1">
+<img class="resource" id="girl3_2" src="res/Image 2 at frame 0.jpg" alt="girl3_2">
+<img class="resource" id="girl3_3" src="res/Image 3 at frame 0.jpg" alt="girl3_3">
+<img class="resource" id="girl3_4" src="res/Image 4 at frame 0.jpg" alt="girl3_4">
+<img class="resource" id="girl3_5" src="res/Image 5 at frame 0.jpg" alt="girl3_5">
+<img class="resource" id="girl3_6" src="res/Image 6 at frame 0.jpg" alt="girl3_6">
+<img class="resource" id="girl2_1" src="res/Image 7 at frame 0.jpg" alt="girl2_1">
+<img class="resource" id="girl2_2" src="res/Image 8 at frame 0.jpg" alt="girl2_2">
+<img class="resource" id="girl2_3" src="res/Image 9 at frame 0.jpg" alt="girl2_3">
+<img class="resource" id="girl2_4" src="res/Image 10 at frame 0.jpg" alt="girl2_4">
+<img class="resource" id="girl2_5" src="res/Image 11 at frame 0.jpg" alt="girl2_5">
+<img class="resource" id="girl2_6" src="res/Image 12 at frame 0.jpg" alt="girl2_6">
+<img class="resource" id="girl1_1" src="res/Image 13 at frame 0.jpg" alt="girl1_1">
+<img class="resource" id="girl1_2" src="res/Image 14 at frame 0.jpg" alt="girl1_2">
+<img class="resource" id="girl1_3" src="res/Image 15 at frame 0.jpg" alt="girl1_3">
+<img class="resource" id="girl1_4" src="res/Image 16 at frame 0.jpg" alt="girl1_4">
+<img class="resource" id="girl1_5" src="res/Image 17 at frame 0.jpg" alt="girl1_5">
+<img class="resource" id="girl1_6" src="res/Image 18 at frame 0.jpg" alt="girl1_6">
+<img class="resource" id="start_0" src="res/Image 21 at frame 0.jpg" alt="start_0">
+<img class="resource" id="start_1" src="res/Image 22 at frame 0.jpg" alt="start_1">
+<img class="resource" id="start_2" src="res/Image 23 at frame 0.jpg" alt="start_2">
+<img class="resource" id="menuframe" src="res/Image 24 at frame 0.png" alt="menuframe">
+<img class="resource" id="background" src="res/Image 25 at frame 3.jpg" alt="background">
+<img class="resource" id="crate" src="res/Image 27 at frame 3.jpg" alt="crate">
+<img class="resource" id="life" src="res/Image 28 at frame 3.jpg" alt="life">
+<img class="resource" id="gameframe" src="res/Image 29 at frame 3.png" alt="gameframe">
+
+<audio id="levelup" src="res/Sound 1 at frame 0.mp3"></audio>
+<audio id="gotit" src="res/Sound 2 at frame 0.mp3"></audio>
+
+<div style="display: flex; flex-direction: row; justify-content: center">
+    <div style="display: flex; flex-direction: column">
+        <canvas id="gameCanvas" width="800" height="600">
+            Fatal Error! Your browser does not support the HTML5 canvas tag.
+        </canvas>
+        <div class="autopilot" id="autopilot-container">
+            <label for="autopilot">I'm drunk, please help</label><input type="checkbox" id="autopilot">
+        </div>
+    </div>
+</div>
+
+<script>
+    // resources & HTML elements
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext('2d');
+    const imgGirl = [];
+    for (let g = 0; g < 3; g++) {
+        imgGirl.push([]);
+        for (let c = 1; c <= 6; c++) {
+            imgGirl[g].push(document.getElementById('girl' + (g + 1) + '_' + c));
+        }
+    }
+    const imgStart = [];
+    for (let c = 0; c < 3; c++) {
+        imgStart.push(document.getElementById('start_' + c));
+    }
+    const imgMenuFrame = document.getElementById('menuframe');
+    const imgBackground = document.getElementById('background');
+    const imgGameFrame = document.getElementById('gameframe');
+    const imgCrate = document.getElementById('crate');
+    const imgLife = document.getElementById('life');
+
+    const createCanvas = (img) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        return canvas;
+    }
+
+    const applyAlpha = (img, alpha) => {
+        const result = createCanvas(img);
+        const imgContext = result.getContext('2d');
+        imgContext.drawImage(img, 0, 0);
+        let imageData = imgContext.getImageData(0, 0, img.width, img.height);
+        const alphaCanvas = createCanvas(alpha);
+        const alphaContext = alphaCanvas.getContext('2d');
+        alphaContext.drawImage(alpha, 0, 0);
+        const alphaData = alphaContext.getImageData(0, 0, alpha.width, alpha.height).data;
+        if (imageData.data.length === alphaData.length) {
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                (imageData.data)[i + 3] = alphaData[i];
+            }
+        }
+        imgContext.putImageData(imageData, 0, 0);
+        return result;
+    }
+
+    const loadWithAlpha = (onload, imgPath, alphaPath) => {
+        const img = new Image();
+        img.src = 'res/' + imgPath;
+        img.onload = () => {
+            const imgAlpha = new Image();
+            imgAlpha.src = 'res/' + alphaPath;
+            imgAlpha.onload = () => onload(applyAlpha(img, imgAlpha));
+        };
+    }
+
+    let imgStartLogo = new Image();
+    loadWithAlpha((img) => imgStartLogo = img, 'Image 19 at frame 0.jpg', 'Image 19 alpha channel at frame 0.png');
+    let imgStartBottle = new Image();
+    loadWithAlpha((img) => imgStartBottle = img, 'Image 20 at frame 0.jpg', 'Image 20 alpha channel at frame 0.png');
+    let imgBottle = new Image();
+    loadWithAlpha((img) => imgBottle = img, 'Image 26 at frame 3.jpg', 'Image 26 alpha channel at frame 3.png');
+    let imgGlasEmpty = new Image();
+    loadWithAlpha((img) => imgGlasEmpty = img, 'Image 30 at frame 3.jpg', 'Image 30 alpha channel at frame 3.png');
+    let imgGlasBeer = new Image();
+    loadWithAlpha((img) => imgGlasBeer = img, 'Image 31 at frame 3.jpg', 'Image 31 alpha channel at frame 3.png');
+    let imgGlasFoam = new Image();
+    loadWithAlpha((img) => imgGlasFoam = img, 'Image 32 at frame 3.jpg', 'Image 32 alpha channel at frame 3.png');
+
+    const playSound = (origin) => {
+        const audioElement = document.createElement('audio');
+        audioElement.src = origin.src;
+        audioElement.addEventListener('canplaythrough', () => {
+            audioElement.play();
+        }, false);
+        audioElement.addEventListener('ended', () => {
+            audioElement.parentElement.removeChild(audioElement);
+        }, false);
+    }
+
+    const soundGotIt = document.getElementById('gotit');
+    const soundLevelUp = document.getElementById('levelup');
+    // FIXME free scaling? just canvas, rescale all to 640?
+
+    const autopilotContainer = document.getElementById('autopilot-container');
+    const autopilotSwitch = document.getElementById('autopilot');
+
+    // data model
+    const mouse = {x: 0, y: 0, onclick: null};
+    let score = 0;
+    const crate = {
+        minX: 118,
+        maxX: 588 - imgCrate.width,
+        x: 0,
+        y: canvas.height - imgCrate.height - 35,
+        w: imgCrate.width,
+        h: imgCrate.height
+    };
+    let glasState = 1.0;
+    let girlState = 0;
+    let curGirl = imgGirl[0];
+    let bottles = [];
+    let lives = 0;
+    let nextSpawn = 0;
+    let gameOver = false;
+    let pauseTime = 0;
+    let lastGameUpdate = null;
+
+    const startGame = (selectedGirl) => {
+        score = 0;
+        crate.x = (crate.maxX - crate.minX) / 2;
+        glasState = 1.0;
+        girlState = 0;
+        curGirl = imgGirl[selectedGirl];
+        bottles.length = 0;
+        lives = 3;
+        nextSpawn = 0;
+        gameOver = false;
+        pauseTime = 0;
+        autopilotContainer.style.opacity = 0.5;
+        autopilotSwitch.checked = false;
+        lastGameUpdate = Date.now();
+        currentLoop = gameLoop;
+    }
+
+    const random = (min, max) => {
+        return Math.floor((Math.random() * (max - min) + 0.5) + min);
+    }
+
+    const updateGame = () => {
+        if (gameOver) return;
+        const nowMs = Date.now();
+        const timediffMs = nowMs - lastGameUpdate;
+        lastGameUpdate = nowMs;
+        pauseTime -= timediffMs;
+        if (pauseTime > 0) return;
+        if (autopilotSwitch.checked) {
+            let nextBottleX = 0;
+            let maxY = 0;
+            bottles.forEach((b) => {
+                if (b.y > maxY) {
+                    nextBottleX = b.x;
+                    maxY = b.y;
+                }
+            });
+            crate.x = nextBottleX;
+        } else {
+            crate.x = mouse.x;
+        }
+        crate.x = Math.max(Math.min(crate.x - crate.w / 2, crate.maxX), crate.minX);
+        nextSpawn -= timediffMs;
+        while (nextSpawn < 0) {
+            bottles.push({
+                x: random(crate.minX + imgBottle.width / 2, crate.maxX - imgBottle.width / 2),
+                y: -5,
+                speed: random(3, 4)
+            });
+            nextSpawn += random(200, 2000);
+        }
+        const oldBottles = bottles;
+        bottles = [];
+        oldBottles.forEach((b) => {
+            b.y += timediffMs * canvas.height / 1000 / b.speed;
+            if (b.y < canvas.height - 13) {
+                if (b.x > crate.x && b.x < crate.x + imgCrate.width
+                    && b.y > crate.y && b.y < crate.y + imgCrate.height / 2) {
+                    score += 100;
+                    playSound(soundGotIt);
+                    if (score >= 10000) {
+                        glasState = 0.09;
+                        if (girlState < 5) {
+                            playSound(soundLevelUp);
+                            pauseTime = 6000;
+                        }
+                        girlState = 5;
+                    } else if (score >= 8000) {
+                        glasState = 0.22;
+                        if (girlState < 4) {
+                            playSound(soundLevelUp);
+                            pauseTime = 6000;
+                        }
+                        girlState = 4;
+                    } else if (score >= 6000) {
+                        glasState = 0.35;
+                        if (girlState < 3) {
+                            playSound(soundLevelUp);
+                            pauseTime = 6000;
+                        }
+                        girlState = 3;
+                    } else if (score >= 4000) {
+                        glasState = 0.5;
+                        if (girlState < 2) {
+                            playSound(soundLevelUp);
+                            pauseTime = 6000;
+                        }
+                        girlState = 2;
+                    } else if (score >= 2000) {
+                        glasState = 0.6;
+                        if (girlState < 1) {
+                            playSound(soundLevelUp);
+                            pauseTime = 6000;
+                        }
+                        girlState = 1;
+                    }
+                } else {
+                    bottles.push(b);
+                }
+            } else if (lives > 0) {
+                lives--;
+            }
+        });
+        if (lives < 1) {
+            gameOver = true;
+            autopilotContainer.style.opacity = 0;
+        }
+    }
+
+    const drawGlasState = () => {
+        const foamHeight = 0.07;
+        ctx.drawImage(imgGlasEmpty, 58, 58, imgGlasEmpty.width, imgGlasEmpty.height);
+        ctx.drawImage(imgGlasBeer, 0, imgGlasBeer.height * glasState, imgGlasBeer.width, imgGlasBeer.height, 58, 58 + imgGlasBeer.height * glasState, imgGlasBeer.width - 1, imgGlasBeer.height);
+        const foamState = glasState - foamHeight;
+        ctx.drawImage(imgGlasFoam, 0, imgGlasFoam.height * foamState, imgGlasFoam.width, imgGlasFoam.height * foamHeight, 58, 58 + imgGlasFoam.height * foamState, imgGlasFoam.width, imgGlasFoam.height * foamHeight);
+    }
+
+    const drawScore = () => {
+        ctx.font = 'bold italic 25px Arial';
+        ctx.fillStyle = 'red';
+        ctx.textAlign = gameOver ? 'center' : 'right';
+        const x = gameOver ? 305 : 560;
+        const y = gameOver ? 330 : 60;
+        ctx.fillText(score.toString(), x, y);
+    }
+
+    const drawLives = () => {
+        for (let c = 0; c < lives; c++) {
+            ctx.drawImage(imgLife, 28 + c * 28, 510, 28, 28);
+        }
+    }
+
+    const drawNewGame = () => {
+        if (!gameOver) return;
+        const x = 60, y = canvas.height - 70, w = 40, h = 30;
+        if (mouse.x > x - w && mouse.x < x + w && mouse.y > y - h && mouse.y < y + h) {
+            mouse.onclick = () => currentLoop = menuLoop;
+        }
+        ctx.font = 'bold 24px Arial';
+        ctx.fillStyle = '#f00';
+        ctx.textAlign = 'center';
+        ctx.fillText("new", x, y - 10);
+        ctx.fillText("game", x, y + 10);
+        ctx.font = '24px Arial';
+        ctx.fillStyle = '#003300';
+        ctx.fillText("www.pilsnerurquell.com", 302, y);
+    }
+
+    const rgbToHex = (rgb) => {
+        let hex = Number(rgb).toString(16);
+        return hex.length < 2 ? "0" + hex : hex;
+    }
+
+    const animate = (speed, max) => {
+        return Math.abs(-max + Math.round((Date.now() % speed) / speed * 2 * max));
+    }
+
+    const drawGameOver = () => {
+        if (!gameOver) return;
+        ctx.font = 'bold 48px Arial';
+        ctx.fillStyle = '#aa9d69' + rgbToHex(animate(750, 127) + 127);
+        ctx.textAlign = 'center';
+        ctx.fillText("GAME OVER", 305, 288);
+    }
+
+    const drawGame = () => {
+        ctx.drawImage(imgBackground, 0, 32, 720, canvas.height - 2 * 32);
+        if (!gameOver) {
+            bottles.forEach((b) => {
+                ctx.drawImage(imgBottle, b.x - imgBottle.width / 2, b.y - imgBottle.height);
+            });
+        }
+        ctx.fillStyle = '#064f35';
+        ctx.fillRect(0, 0, canvas.width, 32);
+        ctx.fillRect(0, canvas.height - 32, canvas.width, 32);
+        if (!gameOver) {
+            ctx.drawImage(imgCrate, crate.x, crate.y);
+        }
+        ctx.drawImage(curGirl[girlState], 596, 32, 190, canvas.height - 2 * 32);
+        ctx.drawImage(imgGameFrame, 0, 13, canvas.width, canvas.height - 26);
+        drawGlasState();
+        drawScore();
+        drawLives();
+        drawNewGame();
+        drawGameOver();
+    }
+
+    const gameLoop = () => {
+        updateGame();
+        drawGame();
+    }
+
+    const grd = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 135, canvas.width / 2, canvas.height / 2, 240);
+    grd.addColorStop(0, "#4a7309");
+    grd.addColorStop(1, "#012f18");
+
+    const drawStartGirl = (img, x) => {
+        const y = 126, w = 149, h = 294, xs = x - 5, ys = y - 4, off = 5;
+        let ox = 0, oy = 0;
+        if (mouse.x > xs && mouse.x < x + w + off && mouse.y > ys && mouse.y < y + h + off) {
+            mouse.onclick = () => startGame(img);
+            ox = off;
+            oy = off;
+        }
+        ctx.fillRect(xs, ys, w, h);
+        ctx.drawImage(imgStart[img], x + ox, y + oy, w, h);
+    }
+
+    const menuLoop = () => {
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#000';
+        drawStartGirl(0, 139);
+        drawStartGirl(1, 331);
+        drawStartGirl(2, 524);
+        ctx.fillStyle = '#aa9d69';
+        ctx.font = 'bold 48px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText("CHOOSE A GIRL!", canvas.width / 2, 90);
+        ctx.fillRect(0, canvas.height - 92, canvas.width, 92);
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold italic 36px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText("UNDRESS ME!", canvas.width / 2, 475);
+        ctx.fillStyle = '#f00';
+        const off = animate(1000, 3) + 1;
+        ctx.fillText("UNDRESS ME!", canvas.width / 2 + off, 475 - off);
+        ctx.drawImage(imgStartLogo, 30, 560 - imgStartLogo.height);
+        ctx.drawImage(imgStartBottle, 685, 560 - imgStartBottle.height);
+        ctx.fillStyle = '#064f35';
+        ctx.fillRect(0, 0, canvas.width, 32);
+        ctx.fillRect(0, canvas.height - 32, canvas.width, 32);
+        ctx.drawImage(imgMenuFrame, 0, 13, canvas.width, canvas.height - 26);
+    }
+
+    // Setup and start
+    canvas.addEventListener('mousemove', (moveEvent) => {
+        const canvasRect = canvas.getBoundingClientRect();
+        mouse.x = moveEvent.clientX - canvasRect.x;
+        mouse.y = moveEvent.clientY - canvasRect.y;
+    });
+    canvas.addEventListener('click', () => {
+        if (mouse.onclick) mouse.onclick();
+    });
+    let currentLoop = menuLoop;
+    // startGame(1); // immediate start
+    // lives = 0; // immediate game over
+    const mainLoop = () => () => {
+        mouse.onclick = null;
+        currentLoop();
+        canvas.style.cursor = mouse.onclick ? 'pointer' : null;
+        requestAnimationFrame(mainLoop());
+    }
+    requestAnimationFrame(mainLoop());
+</script>
+</body>
+</html>
